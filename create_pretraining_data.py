@@ -21,7 +21,7 @@ from __future__ import division
 from __future__ import print_function
 import collections
 import random
-from .tokenization import FastaTokenizer
+from tokenization import FastaTokenizer
 import numpy as np
 import six
 from six.moves import range
@@ -43,54 +43,26 @@ flags.DEFINE_string(
     "vocab_file", None,
     "The vocabulary file that the ALBERT model was trained on.")
 
-flags.DEFINE_string("spm_model_file", None,
-                    "The model file for sentence piece tokenization.")
 
 flags.DEFINE_string("input_file_mode", "r",
                     "The data format of the input file.")
 
 flags.DEFINE_bool(
-    "do_lower_case", True,
+    "do_lower_case", False,
     "Whether to lower case the input text. Should be True for uncased "
     "models and False for cased models.")
 
-flags.DEFINE_bool(
-    "do_whole_word_mask", True,
-    "Whether to use whole word masking rather than per-WordPiece masking.")
-
-flags.DEFINE_bool(
-    "do_permutation", False,
-    "Whether to do the permutation training.")
-
-flags.DEFINE_bool(
-    "favor_shorter_ngram", True,
-    "Whether to set higher probabilities for sampling shorter ngrams.")
-
-flags.DEFINE_bool(
-    "random_next_sentence", False,
-    "Whether to use the sentence that's right before the current sentence "
-    "as the negative sample for next sentence prection, rather than using "
-    "sentences from other random documents.")
 
 flags.DEFINE_integer("max_seq_length", 512, "Maximum sequence length.")
 
-flags.DEFINE_integer("ngram", 3, "Maximum number of ngrams to mask.")
 
 flags.DEFINE_integer("max_predictions_per_seq", 20,
                      "Maximum number of masked LM predictions per sequence.")
 
 flags.DEFINE_integer("random_seed", 12345, "Random seed for data generation.")
 
-flags.DEFINE_integer(
-    "dupe_factor", 40,
-    "Number of times to duplicate the input data (with different masks).")
 
 flags.DEFINE_float("masked_lm_prob", 0.15, "Masked LM probability.")
-
-flags.DEFINE_float(
-    "short_seq_prob", 0.1,
-    "Probability of creating sequences which are shorter than the "
-    "maximum length.")
 
 
 
@@ -112,7 +84,7 @@ class TrainingInstance(object):
   """A single training instance (sentence pair)."""
 
   def __init__(self, input_ids, input_mask, segment_ids, masked_lm_positions,
-                masked_lm_ids, masked_lm_weights, next_sentence_labels):
+                masked_lm_ids, masked_lm_weights):
     features = collections.OrderedDict()
     #The token IDs
     features["input_ids"] = create_int_feature(input_ids)
@@ -151,38 +123,40 @@ class TrainingExmpleWriter():
     for performance on large files
     Buffer Size is number of records
 
+    output_files is a comma seperated list of file paths
+
     **IMPORTANT**
     Must call flush_and_close() when finished to make sure all data is written to disk
   """
-  def __init__(self, output_files: [str]):
+  def __init__(self, output_files: str):
     self.writers = self._create_output_writers(output_files)
     self.writer_index = 0
     self.total_written = 0
 
+
   def flush_and_close(self):
-    for writer in output_writers_queue:
+    for writer in self.writers:
       writer.flush()
       writer.close()
 
 
   def write(self, trainingInstance: TrainingInstance):
-    self.writers[writer_index].write(trainingInstance.serialize())
+    self.writers[self.writer_index].write(trainingInstance.serialize())
 
     self.writer_index = (self.writer_index + 1) % len(self.writers)
 
-    total_written += 1
+    self.total_written += 1
 
 
-  def total_written(self):
-    return self.total_written
+  def _create_output_writers(self, output_paths: str):
+    output_files = [f for f in output_paths.split(",") if f]
 
-
-  def _create_output_writers(self, output_files: [str]):
     output_file_writers = []
     tf.logging.info("*** Writing output files ***")
     for output_file in output_files:
       tf.logging.info("  %s", output_file)
-      output_file_writers.append(tf.python_io.TFRecordWriter(output_file))
+      ouput_writer = tf.python_io.TFRecordWriter(output_file)
+      output_file_writers.append(ouput_writer)
     
     return output_file_writers
 
@@ -216,7 +190,7 @@ def create_masked_lm_predictions(tokens, masked_lm_prob,
         masked_token = rng.choice(vocab_words)
 
     masked_token_labels.append(MaskedLmInstance(index=idx, label=tokens[idx]))
-    tokens[index] = masked_token
+    tokens[idx] = masked_token
   
   assert len(masked_token_labels) <= num_to_mask
 
@@ -241,7 +215,7 @@ def process_input_files(input_files: [str], tokenizer: FastaTokenizer,
 
   """
   for input_file in input_files:
-    process_input_file(input_file, tokenizer, dataWriter)
+    process_input_file(input_file, tokenizer, dataWriter, rng)
 
 
 def process_input_file(input_file: str, tokenizer: FastaTokenizer, 
@@ -254,6 +228,7 @@ def process_input_file(input_file: str, tokenizer: FastaTokenizer,
       line = reader.readline()
       if not line:
         break
+      line = line.strip()
       
       tokens = tokenizer.tokenize(line)
 
@@ -273,25 +248,25 @@ def process_input_file(input_file: str, tokenizer: FastaTokenizer,
                                                 FLAGS.max_predictions_per_seq, vocab_words, rng)
 
       masked_token_ids = tokenizer.tokens_to_ids(masked_tokens)
-      masked_label_ids = tokenizer.tokens_to_ids(masked_label_ids)
+      masked_label_ids = tokenizer.tokens_to_ids(masked_labels)
 
       #pad 0's until length is equal to max_seq_length
       while len(masked_token_ids) < max_seq_length: 
         masked_token_ids.append(0)
 
       input_mask = [1] * len(masked_token_ids)
-      segment_id = [0] * len(masked_token_ids)
+      segment_ids = [0] * len(masked_token_ids)
       mask_weights = [1.0] * len(masked_token_ids)
 
-      assert len(input_ids) == max_seq_length
+      assert len(masked_token_ids) == max_seq_length
       assert len(input_mask) == max_seq_length
       assert len(segment_ids) == max_seq_length
       assert len(mask_indexes) == len(masked_label_ids)
 
       
-      training_instance = TrainingInstance(masked_token_ids, input_mask, segment_id,
+      training_instance = TrainingInstance(masked_token_ids, input_mask, segment_ids,
                                             mask_indexes, masked_label_ids,  mask_weights)
-      
+
       dataWriter.write(training_instance)
 
 
@@ -299,9 +274,10 @@ def process_input_file(input_file: str, tokenizer: FastaTokenizer,
 def main(_):
   tf.logging.set_verbosity(tf.logging.INFO)
 
-  tokenizer = tokenization.FullTokenizer(
-      vocab_file=FLAGS.vocab_file, do_lower_case=FLAGS.do_lower_case,
-      spm_model_file=FLAGS.spm_model_file)
+  tokenizer = FastaTokenizer(
+      vocab_file=FLAGS.vocab_file, do_lower_case=FLAGS.do_lower_case)
+
+  tokenizer.load_vocab(FLAGS.vocab_file)
 
   input_files = []
   for input_pattern in FLAGS.input_file.split(","):
@@ -312,20 +288,15 @@ def main(_):
     tf.logging.info("  %s", input_file)
 
   rng = random.Random(FLAGS.random_seed)
-  instances = create_training_instances(
-      input_files, tokenizer, FLAGS.max_seq_length, FLAGS.dupe_factor,
-      FLAGS.short_seq_prob, FLAGS.masked_lm_prob, FLAGS.max_predictions_per_seq,
-      rng)
+  
+  writer = TrainingExmpleWriter(FLAGS.output_file)
 
-  tf.logging.info("number of instances: %i", len(instances))
+  process_input_files(input_files, tokenizer, writer, rng)
 
-  output_files = FLAGS.output_file.split(",")
-  tf.logging.info("*** Writing to output files ***")
-  for output_file in output_files:
-    tf.logging.info("  %s", output_file)
+  writer.flush_and_close()
 
-  write_instance_to_example_files(instances, tokenizer, FLAGS.max_seq_length,
-                                  FLAGS.max_predictions_per_seq, output_files)
+  tf.logging.info("Total training examples written: %d", writer.total_written)
+
 
 
 if __name__ == "__main__":

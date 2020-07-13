@@ -56,7 +56,7 @@ class FastaTokenizer(object):
     self.inv_vocab = collections.OrderedDict()
 
   def vocab_words(self):
-    return self.vocab.keys()
+    return list(self.vocab.keys())
 
 
   def load_dictionary(self, dictionary_file: str):
@@ -100,13 +100,13 @@ class FastaTokenizer(object):
           continue
 
         if token not in self.vocab:
-          self.inv_vocab[len(vocab)] = token
+          self.inv_vocab[len(self.vocab)] = token
           self.vocab[token] = len(self.vocab)
 
         line_num += 1
     
 
-  def tokenize(self, text) -> List[str]:
+  def tokenize(self, text) -> [str]:
     """Tokenizes a piece of text."""
     assert self.vocab
 
