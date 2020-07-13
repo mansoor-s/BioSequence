@@ -70,8 +70,6 @@ def _create_record(max_predictions_per_seq, max_seq_length, vocab_size):
       [1. for _ in range(max_predictions_per_seq)])
   example.features.feature["segment_ids"].int64_list.value.extend(
       [0 for _ in range(max_seq_length)])
-  example.features.feature["next_sentence_labels"].int64_list.value.append(
-      random.randint(0, 1))
   return example
 
 

@@ -148,10 +148,6 @@ def model_fn_builder(albert_config, init_checkpoint, learning_rate,
     masked_lm_positions = features["masked_lm_positions"]
     masked_lm_ids = features["masked_lm_ids"]
     masked_lm_weights = features["masked_lm_weights"]
-    # Note: We keep this feature name `next_sentence_labels` to be compatible
-    # with the original data created by lanzhzh@. However, in the ALBERT case
-    # it does represent sentence_order_labels.
-    sentence_order_labels = features["next_sentence_labels"]
 
     is_training = (mode == tf.estimator.ModeKeys.TRAIN)
 
@@ -171,11 +167,8 @@ def model_fn_builder(albert_config, init_checkpoint, learning_rate,
                                                  masked_lm_ids,
                                                  masked_lm_weights)
 
-    (sentence_order_loss, sentence_order_example_loss,
-     sentence_order_log_probs) = get_sentence_order_output(
-         albert_config, model.get_pooled_output(), sentence_order_labels)
 
-    total_loss = masked_lm_loss + sentence_order_loss
+    total_loss = masked_lm_loss
 
     tvars = tf.trainable_variables()
 
@@ -232,8 +225,7 @@ def model_fn_builder(albert_config, init_checkpoint, learning_rate,
       def metric_fn(*args):
         """Computes the loss and accuracy of the model."""
         (masked_lm_example_loss, masked_lm_log_probs, masked_lm_ids,
-         masked_lm_weights, sentence_order_example_loss,
-         sentence_order_log_probs, sentence_order_labels) = args[:7]
+         masked_lm_weights) = args[:4]
 
 
         masked_lm_log_probs = tf.reshape(masked_lm_log_probs,
@@ -255,27 +247,11 @@ def model_fn_builder(albert_config, init_checkpoint, learning_rate,
             "masked_lm_loss": masked_lm_mean_loss,
         }
 
-        sentence_order_log_probs = tf.reshape(
-            sentence_order_log_probs, [-1, sentence_order_log_probs.shape[-1]])
-        sentence_order_predictions = tf.argmax(
-            sentence_order_log_probs, axis=-1, output_type=tf.int32)
-        sentence_order_labels = tf.reshape(sentence_order_labels, [-1])
-        sentence_order_accuracy = tf.metrics.accuracy(
-            labels=sentence_order_labels,
-            predictions=sentence_order_predictions)
-        sentence_order_mean_loss = tf.metrics.mean(
-            values=sentence_order_example_loss)
-        metrics.update({
-            "sentence_order_accuracy": sentence_order_accuracy,
-            "sentence_order_loss": sentence_order_mean_loss
-        })
         return metrics
 
       metric_values = [
           masked_lm_example_loss, masked_lm_log_probs, masked_lm_ids,
-          masked_lm_weights, sentence_order_example_loss,
-          sentence_order_log_probs, sentence_order_labels
-      ]
+          masked_lm_weights]
 
       eval_metrics = (metric_fn, metric_values)
 
@@ -338,29 +314,6 @@ def get_masked_lm_output(albert_config, input_tensor, output_weights, positions,
   return (loss, per_example_loss, log_probs)
 
 
-def get_sentence_order_output(albert_config, input_tensor, labels):
-  """Get loss and log probs for the next sentence prediction."""
-
-  # Simple binary classification. Note that 0 is "next sentence" and 1 is
-  # "random sentence". This weight matrix is not used after pre-training.
-  with tf.variable_scope("cls/seq_relationship"):
-    output_weights = tf.get_variable(
-        "output_weights",
-        shape=[2, albert_config.hidden_size],
-        initializer=modeling.create_initializer(
-            albert_config.initializer_range))
-    output_bias = tf.get_variable(
-        "output_bias", shape=[2], initializer=tf.zeros_initializer())
-
-    logits = tf.matmul(input_tensor, output_weights, transpose_b=True)
-    logits = tf.nn.bias_add(logits, output_bias)
-    log_probs = tf.nn.log_softmax(logits, axis=-1)
-    labels = tf.reshape(labels, [-1])
-    one_hot_labels = tf.one_hot(labels, depth=2, dtype=tf.float32)
-    per_example_loss = -tf.reduce_sum(one_hot_labels * log_probs, axis=-1)
-    loss = tf.reduce_mean(per_example_loss)
-    return (loss, per_example_loss, log_probs)
-
 
 def gather_indexes(sequence_tensor, positions):
   """Gathers the vectors at the specific positions over a minibatch."""
@@ -393,24 +346,15 @@ def input_fn_builder(input_files,
         "input_ids": tf.FixedLenFeature([max_seq_length], tf.int64),
         "input_mask": tf.FixedLenFeature([max_seq_length], tf.int64),
         "segment_ids": tf.FixedLenFeature([max_seq_length], tf.int64),
-        # Note: We keep this feature name `next_sentence_labels` to be
-        # compatible with the original data created by lanzhzh@. However, in
-        # the ALBERT case it does represent sentence_order_labels.
-        "next_sentence_labels": tf.FixedLenFeature([1], tf.int64),
     }
 
-    if FLAGS.masked_lm_budget:
-      name_to_features.update({
-          "token_boundary":
-              tf.FixedLenFeature([max_seq_length], tf.int64)})
-    else:
-      name_to_features.update({
-          "masked_lm_positions":
-              tf.FixedLenFeature([max_predictions_per_seq], tf.int64),
-          "masked_lm_ids":
-              tf.FixedLenFeature([max_predictions_per_seq], tf.int64),
-          "masked_lm_weights":
-              tf.FixedLenFeature([max_predictions_per_seq], tf.float32)})
+    name_to_features.update({
+        "masked_lm_positions":
+            tf.FixedLenFeature([max_predictions_per_seq], tf.int64),
+        "masked_lm_ids":
+            tf.FixedLenFeature([max_predictions_per_seq], tf.int64),
+        "masked_lm_weights":
+            tf.FixedLenFeature([max_predictions_per_seq], tf.float32)})
 
     # For training, we want a lot of parallel reading and shuffling.
     # For eval, we want no shuffling and parallel reading doesn't matter.
