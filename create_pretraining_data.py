@@ -27,6 +27,7 @@ import six
 from six.moves import range
 from six.moves import zip
 import tensorflow.compat.v1 as tf
+import os
 
 flags = tf.flags
 
@@ -274,13 +275,16 @@ def process_input_file(input_file: str, tokenizer: FastaTokenizer,
 def main(_):
   tf.logging.set_verbosity(tf.logging.INFO)
 
-  tokenizer = FastaTokenizer(
-      vocab_file=FLAGS.vocab_file, do_lower_case=FLAGS.do_lower_case)
+  tf.logging.info("Vocab file path: *%s*", FLAGS.vocab_file.strip())
 
-  tokenizer.load_vocab(FLAGS.vocab_file)
+  tokenizer = FastaTokenizer(
+      vocab_file=FLAGS.vocab_file.strip(), do_lower_case=FLAGS.do_lower_case)
+
+  tokenizer.load_vocab()
 
   input_files = []
   for input_pattern in FLAGS.input_file.split(","):
+    input_pattern = input_pattern.strip()
     input_files.extend(tf.gfile.Glob(input_pattern))
 
   tf.logging.info("*** Reading from input files ***")

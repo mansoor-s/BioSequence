@@ -59,37 +59,10 @@ class FastaTokenizer(object):
     return list(self.vocab.keys())
 
 
-  def load_dictionary(self, dictionary_file: str):
-    """Loads a dictionary file and creates a vocab data structure."""
-    self.vocab[self.mask_token] = 0
-    self.inv_vocab[0] = self.mask_token
-
-    line_num = 0
-    with tf.gfile.GFile(vocab_file, "r") as reader:
-      while True:
-        token = reader.readline()
-        if not token:
-          break
-        token = token.strip()
-        if not token:
-          tf.logging.info("Malformed line in dictionary file: %i", len(line_num))
-          continue
-
-        if token not in vocab:
-          inv_vocab[len(vocab)] = token
-          vocab[token] = len(vocab)
-
-        line_num += 1
-
-    self.vocab = vocab
-    self.inv_vocab = inv_vocab
-
-    
-
-  def load_vocab(self, vocab_file: str):
+  def load_vocab(self):
     """Loads a vocabulary file into a dictionary."""
     line_num = 0
-    with tf.gfile.GFile(vocab_file, "r") as reader:
+    with tf.gfile.GFile(self.vocab_file, "r") as reader:
       while True:
         token = reader.readline()
         if not token:
