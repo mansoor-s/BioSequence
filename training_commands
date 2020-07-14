@@ -1,0 +1,55 @@
+gsutil -m cp -r gs://bioinformaticsdatasets/uniparc_split/uniparc_shuffled_part_aj ./ && \
+gsutil -m cp -r gs://bioinformaticsdatasets/uniparc_split/uniparc_shuffled_part_ai ./ && \
+gsutil -m cp -r gs://bioinformaticsdatasets/uniparc_split/uniparc_shuffled_part_ah ./
+
+
+python create_pretraining_data.py  \
+--input_file="../uniparc/uniparc_shuffled_part_aj" \
+--output_file="../uniparc/output/uniparc_preprocessed_aj"  --vocab_file="vocab.txt"
+
+python create_pretraining_data.py  \
+--input_file="../uniparc/uniparc_shuffled_part_ai" \
+--output_file="../uniparc/output/uniparc_preprocessed_ai"  --vocab_file="vocab.txt"
+
+
+cd BioSequence/ && source venv/bin/activate
+
+---------------------------------------------------------------------
+
+python create_pretraining_data.py  \
+--input_file="../uniparc/uniparc_shuffled_part_aa" \
+--output_file="../uniparc/output/uniparc_preprocessed_aa"  --vocab_file="vocab.txt"
+
+python create_pretraining_data.py  \
+--input_file="../uniparc/uniparc_shuffled_part_ab" \
+--output_file="../uniparc/output/uniparc_preprocessed_ab"  --vocab_file="vocab.txt"
+
+
+python create_pretraining_data.py  \
+--input_file="../uniparc/uniparc_shuffled_part_ac" \
+--output_file="../uniparc/output/uniparc_preprocessed_ac"  --vocab_file="vocab.txt"
+
+
+python create_pretraining_data.py  \
+--input_file="../uniparc/uniparc_shuffled_part_ad" \
+--output_file="../uniparc/output/uniparc_preprocessed_ad"  --vocab_file="vocab.txt"
+
+
+python create_pretraining_data.py  \
+--input_file="../uniparc/uniparc_shuffled_part_ae" \
+--output_file="../uniparc/output/uniparc_preprocessed_ae"  --vocab_file="vocab.txt"
+
+python create_pretraining_data.py  \
+--input_file="../uniparc/uniparc_shuffled_part_af" \
+--output_file="../uniparc/output/uniparc_preprocessed_af"  --vocab_file="vocab.txt"
+
+python create_pretraining_data.py  \
+--input_file="../uniparc/uniparc_shuffled_part_ag" \
+--output_file="../uniparc/output/uniparc_preprocessed_ag"  --vocab_file="vocab.txt"
+
+python create_pretraining_data.py  \
+--input_file="../uniparc/uniparc_shuffled_part_ah" \
+--output_file="../uniparc/output/uniparc_preprocessed_ah"  --vocab_file="vocab.txt"
+
+
+
