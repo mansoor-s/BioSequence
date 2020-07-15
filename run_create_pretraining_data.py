@@ -14,7 +14,7 @@ input_files = [
 	"uniparc_shuffled_part_aa_ab",
 	"uniparc_shuffled_part_aa_ac",
 	"uniparc_shuffled_part_aa_ad",
-	
+
 	"uniparc_shuffled_part_ab_aa",
 	"uniparc_shuffled_part_ab_ab",
 	"uniparc_shuffled_part_ab_ac",
@@ -32,7 +32,7 @@ input_files = [
 ]
 
 intput_path_format = "../uniparc/{}"
-output_path_format = "../uniparc/output/{}}"
+output_path_format = "../uniparc/output/{}"
 
 
 
