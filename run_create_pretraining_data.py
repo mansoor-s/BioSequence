@@ -14,14 +14,25 @@ input_files = [
 	"uniparc_shuffled_part_aa_ab",
 	"uniparc_shuffled_part_aa_ac",
 	"uniparc_shuffled_part_aa_ad",
+	
 	"uniparc_shuffled_part_ab_aa",
 	"uniparc_shuffled_part_ab_ab",
 	"uniparc_shuffled_part_ab_ac",
-	"uniparc_shuffled_part_ab_ad"
+	"uniparc_shuffled_part_ab_ad",
+
+	"uniparc_shuffled_part_ac_aa",
+	"uniparc_shuffled_part_ac_ab",
+	"uniparc_shuffled_part_ac_ac",
+	"uniparc_shuffled_part_ac_ad",
+
+	"uniparc_shuffled_part_ad_aa",
+	"uniparc_shuffled_part_ad_ab",
+	"uniparc_shuffled_part_ad_ac",
+	"uniparc_shuffled_part_ad_ad"
 ]
 
-intput_path_format = "../uniparc/%s"
-output_path_format = "../uniparc/output/%s"
+intput_path_format = "../uniparc/{}"
+output_path_format = "../uniparc/output/{}}"
 
 
 

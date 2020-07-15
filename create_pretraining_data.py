@@ -255,18 +255,28 @@ def process_input_file(input_file: str, tokenizer: FastaTokenizer,
       while len(masked_token_ids) < max_seq_length: 
         masked_token_ids.append(0)
 
+      
+
       input_mask = [1] * len(masked_token_ids)
       segment_ids = [0] * len(masked_token_ids)
-      mask_weights = [1.0] * len(masked_token_ids)
+
+      mask_lm_weights = [1.0] * len(masked_label_ids)
 
       assert len(masked_token_ids) == max_seq_length
       assert len(input_mask) == max_seq_length
       assert len(segment_ids) == max_seq_length
+
+      while len(masked_label_ids) < FLAGS.max_predictions_per_seq:
+        mask_lm_weights.append(0)
+        masked_label_ids.append(0)
+        mask_indexes.append(0)
+
+
       assert len(mask_indexes) == len(masked_label_ids)
 
       
       training_instance = TrainingInstance(masked_token_ids, input_mask, segment_ids,
-                                            mask_indexes, masked_label_ids,  mask_weights)
+                                            mask_indexes, masked_label_ids,  mask_lm_weights)
 
       dataWriter.write(training_instance)
 
