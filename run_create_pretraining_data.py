@@ -7,7 +7,7 @@ def launch_data_prep_process(input_file, output_file, vocab_file="vocab.txt"):
 						"--output_file={}".format(output_file),
 						"--vocab_file={}".format(vocab_file)])
 
-
+"""
 #list of strings indicating only the file name
 input_files = [
 	"uniparc_shuffled_part_aa_aa",
@@ -34,6 +34,14 @@ input_files = [
 intput_path_format = "../uniparc/{}"
 output_path_format = "../uniparc/output/{}"
 
+"""
+
+input_files = [
+	"test.fasta"
+]
+
+intput_path_format = "./{}"
+output_path_format = "gs://bioinformaticsdatasets/test/{}"
 
 
 if __name__ == "__main__":

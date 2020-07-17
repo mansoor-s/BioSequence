@@ -1,0 +1,9 @@
+python run_pretraining.py \
+--input_file=gs://bioinformaticsdatasets-europe/processed/* \
+--output_dir=gs://bioinformaticsdatasets-europe/model-output/ \
+--albert_config_file=albert_config.json \
+--use_tpu=True \
+--tpu_name=mansoor \
+--tpu_zone=europe-west4-a \
+--gcp_project=bioinformatics-282809 \
+--train_batch_size=800
