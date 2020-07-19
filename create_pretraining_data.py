@@ -28,7 +28,7 @@ from six.moves import range
 from six.moves import zip
 import tensorflow.compat.v1 as tf
 import os
-import cProfile
+#import cProfile
 
 flags = tf.flags
 
@@ -329,4 +329,5 @@ if __name__ == "__main__":
   flags.mark_flag_as_required("output_file")
   flags.mark_flag_as_required("vocab_file")
   
-  cProfile.run('tf.app.run()')
+  #cProfile.run('tf.app.run()')
+  tf.app.run()

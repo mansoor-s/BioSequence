@@ -15,6 +15,6 @@
 	"num_memory_blocks": 0,
 	"inner_group_num": 1,
 	"down_scale_factor": 1,
-	"type_vocab_size": 2,
-	"vocab_size": 26
+	"type_vocab_size": 1,
+	"vocab_size": 28
 }

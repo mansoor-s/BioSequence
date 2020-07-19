@@ -1,4 +1,6 @@
 import subprocess
+import sys
+import os
 
 #each input file gets its own process 
 def launch_data_prep_process(input_file, output_file, vocab_file="vocab.txt"):
@@ -19,7 +21,9 @@ input_files = [
 	"uniparc_shuffled_part_ab_ab",
 	"uniparc_shuffled_part_ab_ac",
 	"uniparc_shuffled_part_ab_ad",
+]
 
+"""
 	"uniparc_shuffled_part_ac_aa",
 	"uniparc_shuffled_part_ac_ab",
 	"uniparc_shuffled_part_ac_ac",
@@ -29,7 +33,7 @@ input_files = [
 	"uniparc_shuffled_part_ad_ab",
 	"uniparc_shuffled_part_ad_ac",
 	"uniparc_shuffled_part_ad_ad"
-]
+"""
 
 intput_path_format = "../uniparc/{}"
 output_path_format = "../uniparc/output/{}"
@@ -46,8 +50,16 @@ output_path_format = "gs://bioinformaticsdatasets/test/{}"
 """
 
 if __name__ == "__main__":
+	if len(sys.argv) < 3:
+		print('Input and out put paths are required!')
+		exit()
+
+	input_path = sys.argv[1]
+	output_path = sys.argv[2]
+
 	for f in input_files:
-		input_path = intput_path_format.format(f)
-		output_path = output_path_format.format(f)
+		input_path = os.path.join(input_path, f)
+		output_path = os.path.join(output_path, f)
 		launch_data_prep_process(input_path, output_path)
+
   
