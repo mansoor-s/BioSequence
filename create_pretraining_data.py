@@ -85,7 +85,7 @@ class TrainingInstance(object):
 
   def __init__(self, input_ids, input_mask, segment_ids, masked_lm_positions,
                 masked_lm_ids, masked_lm_weights):
-    features = {}
+    features = collections.OrderedDict()
     #The token IDs
     features["input_ids"] = create_int_feature(input_ids)
     
@@ -272,8 +272,9 @@ def process_input_file(input_file: str, tokenizer: FastaTokenizer,
       max_mask_tokens = min(max_predictions_per_seq, max_seq_length)
       pred_diff = max_mask_tokens - len(masked_label_ids)
       if pred_diff > 0:
+        float_paddign = [0.0] * pred_diff
         padding = [0] * pred_diff
-        mask_lm_weights += padding
+        mask_lm_weights += float_paddign
         masked_label_ids += padding
         mask_indexes += padding
 
