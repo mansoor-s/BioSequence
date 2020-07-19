@@ -3,11 +3,15 @@ import sys
 import os
 
 #each input file gets its own process 
-def launch_data_prep_process(input_file, output_file, vocab_file="vocab.txt"):
+def launch_data_prep_process(input_file, output_file, vocab_file="vocab.txt",
+								masked_lm_prob, max_predictions_per_seq):
+
 	subprocess.Popen(['python', 'create_pretraining_data.py',
 						"--input_file={}".format(input_file),
 						"--output_file={}".format(output_file),
-						"--vocab_file={}".format(vocab_file)])
+						"--vocab_file={}".format(vocab_file),
+						"--masked_lm_prob={}".format(),
+						"--max_predictions_per_seq={}".format()])
 
 
 #list of strings indicating only the file name
@@ -50,16 +54,20 @@ output_path_format = "gs://bioinformaticsdatasets/test/{}"
 """
 
 if __name__ == "__main__":
-	if len(sys.argv) < 3:
-		print('Input and out put paths are required!')
+	if len(sys.argv) < 5:
+		print('Arguments should be: Input path, Output path, masked_lm_prob, and max_predictions_per_seq')
 		exit()
 
 	input_path = sys.argv[1]
 	output_path = sys.argv[2]
 
+	masked_lm_prob = sys.argv[3]
+	max_predictions_per_seq = sys.argv[4]
+
 	for f in input_files:
 		input_path = os.path.join(input_path, f)
 		output_path = os.path.join(output_path, f)
-		launch_data_prep_process(input_path, output_path)
+
+		launch_data_prep_process(input_path, output_path, masked_lm_prob, max_predictions_per_seq)
 
   
