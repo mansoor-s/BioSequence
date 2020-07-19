@@ -269,7 +269,8 @@ def process_input_file(input_file: str, tokenizer: FastaTokenizer,
 
       mask_lm_weights = [1.0] * len(masked_label_ids)
 
-      pred_diff = max_predictions_per_seq - len(masked_label_ids)
+      max_mask_tokens = min(max_predictions_per_seq, max_seq_length)
+      pred_diff = max_mask_tokens - len(masked_label_ids)
       if pred_diff > 0:
         padding = [0] * pred_diff
         mask_lm_weights += padding
