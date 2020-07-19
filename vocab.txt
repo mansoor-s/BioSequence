@@ -1,4 +1,6 @@
 [MASK]
+[CLS]
+[END]
 A
 B
 C

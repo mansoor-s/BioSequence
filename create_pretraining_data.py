@@ -90,8 +90,7 @@ class TrainingInstance(object):
     #The token IDs
     features["input_ids"] = create_int_feature(input_ids)
     
-    #List of all 1's
-    #https://github.com/google-research/albert/blob/4135001fb1a84491bb86bebb2646523495d36f74/modeling.py#L191
+    #List of all 1's for anything that is not a padding (0's)
     features["input_mask"] = create_int_feature(input_mask)
     
     # Segment ID is used in bert to seperate sentences pairs. 
@@ -162,12 +161,10 @@ class TrainingExmpleWriter():
     return output_file_writers
 
 
-
-
-
-
 def create_masked_lm_predictions(tokens, masked_lm_prob,
                                  max_predictions_per_seq, vocab_words, rng):
+  #Expects tokens to have the CLS and END tokens
+
   #Rewritten for single sequence usecases without next sentence prediciton support
   #This should greatly simplify this function over the one that comes with albert
   #Some of the code comes from https://github.com/lonePatient/albert_pytorch/blob/master/prepare_lm_data_mask.py
@@ -175,7 +172,8 @@ def create_masked_lm_predictions(tokens, masked_lm_prob,
   num_to_mask = min(max_predictions_per_seq, 
                     max(1, int(round(len(tokens) * masked_lm_prob))))
 
-  cand_indexes = range(len(tokens))
+  #skip first [CLS] and last tokens [END]
+  cand_indexes = range(1,len(tokens)-1)
   mask_indexes = sorted(rng.sample(cand_indexes, num_to_mask))
 
   masked_token_labels = []
@@ -233,7 +231,8 @@ def process_input_file(input_file: str, tokenizer: FastaTokenizer,
       
       tokens = tokenizer.tokenize(line)
 
-      max_seq_length = FLAGS.max_seq_length 
+      # -2 for [CLS] and [END] tokens
+      max_seq_length = FLAGS.max_seq_length -2
       if len(tokens) > max_seq_length:
         # 50% probability of starting from the left or right
         # This is to reduce bias from training data
@@ -241,6 +240,8 @@ def process_input_file(input_file: str, tokenizer: FastaTokenizer,
           tokens = tokens[:max_seq_length]
         else:
           tokens = tokens[-max_seq_length:]
+
+      tokens = ['[CLS]'] + tokens + ['[END]']
 
       vocab_words = tokenizer.vocab_words()
 
@@ -251,20 +252,17 @@ def process_input_file(input_file: str, tokenizer: FastaTokenizer,
       masked_token_ids = tokenizer.tokens_to_ids(masked_tokens)
       masked_label_ids = tokenizer.tokens_to_ids(masked_labels)
 
+      input_mask = [1] * len(masked_token_ids)
+
       #pad 0's until length is equal to max_seq_length
       while len(masked_token_ids) < max_seq_length: 
         masked_token_ids.append(0)
+        input_mask.append(0)
 
       
-
-      input_mask = [1] * len(masked_token_ids)
       segment_ids = [0] * len(masked_token_ids)
 
       mask_lm_weights = [1.0] * len(masked_label_ids)
-
-      assert len(masked_token_ids) == max_seq_length
-      assert len(input_mask) == max_seq_length
-      assert len(segment_ids) == max_seq_length
 
       while len(masked_label_ids) < FLAGS.max_predictions_per_seq:
         mask_lm_weights.append(0)
@@ -272,6 +270,9 @@ def process_input_file(input_file: str, tokenizer: FastaTokenizer,
         mask_indexes.append(0)
 
 
+      assert len(masked_token_ids) == max_seq_length
+      assert len(input_mask) == max_seq_length
+      assert len(segment_ids) == max_seq_length
       assert len(mask_indexes) == len(masked_label_ids)
 
       
