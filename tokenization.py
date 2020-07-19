@@ -52,8 +52,8 @@ class FastaTokenizer(object):
     self.unknown_token = unknown_token
     self.do_lower_case = do_lower_case
     self.vocab_file = vocab_file
-    self.vocab = collections.OrderedDict()
-    self.inv_vocab = collections.OrderedDict()
+    self.vocab = {}
+    self.inv_vocab = {}
 
   def vocab_words(self):
     return list(self.vocab.keys())
@@ -88,14 +88,7 @@ class FastaTokenizer(object):
 
 
   def tokens_to_ids(self, tokens: [str]) -> [int]:
-    ret = []
-    for token in tokens:
-      if token in tokens:
-        ret.append(self.vocab[token])
-      else:
-        ret.appnd(self.vocab[self.unknown_token])
-    
-    return ret
+    return [self.vocab[t] if t in self.vocab else self.vocab[self.unknown_token] for t in tokens]
 
 
   def ids_to_tokens(self, ids: [int]) -> [str]:

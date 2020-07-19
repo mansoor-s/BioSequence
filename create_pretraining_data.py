@@ -28,6 +28,7 @@ from six.moves import range
 from six.moves import zip
 import tensorflow.compat.v1 as tf
 import os
+import cProfile
 
 flags = tf.flags
 
@@ -68,13 +69,11 @@ flags.DEFINE_float("masked_lm_prob", 0.15, "Masked LM probability.")
 
 
 def create_int_feature(values):
-  feature = tf.train.Feature(int64_list=tf.train.Int64List(value=list(values)))
-  return feature
+  return tf.train.Feature(int64_list=tf.train.Int64List(value=list(values)))
 
 
 def create_float_feature(values):
-  feature = tf.train.Feature(float_list=tf.train.FloatList(value=list(values)))
-  return feature
+  return tf.train.Feature(float_list=tf.train.FloatList(value=list(values)))
 
 
 MaskedLmInstance = collections.namedtuple("MaskedLmInstance",
@@ -86,7 +85,7 @@ class TrainingInstance(object):
 
   def __init__(self, input_ids, input_mask, segment_ids, masked_lm_positions,
                 masked_lm_ids, masked_lm_weights):
-    features = collections.OrderedDict()
+    features = {}
     #The token IDs
     features["input_ids"] = create_int_feature(input_ids)
     
@@ -202,7 +201,8 @@ def create_masked_lm_predictions(tokens, masked_lm_prob,
 
 
 def process_input_files(input_files: [str], tokenizer: FastaTokenizer, 
-                          dataWriter: TrainingExmpleWriter, rng):
+                          dataWriter: TrainingExmpleWriter, rng, max_seq_length,
+                        masked_lm_prob, max_predictions_per_seq):
   """
     Process over entire data set
     Steps for each row in each file:
@@ -214,15 +214,17 @@ def process_input_files(input_files: [str], tokenizer: FastaTokenizer,
 
   """
   for input_file in input_files:
-    process_input_file(input_file, tokenizer, dataWriter, rng)
+    process_input_file(input_file, tokenizer, dataWriter, rng, max_seq_length,
+                        masked_lm_prob, max_predictions_per_seq)
 
 
 def process_input_file(input_file: str, tokenizer: FastaTokenizer, 
-                        dataWriter: TrainingExmpleWriter, rng):
+                        dataWriter: TrainingExmpleWriter, rng, max_seq_length,
+                        masked_lm_prob, max_predictions_per_seq):
   """
     process a single file
   """
-  with tf.gfile.GFile(input_file, FLAGS.input_file_mode) as reader:
+  with tf.gfile.GFile(input_file, 'r') as reader:
     while True:
       line = reader.readline()
       if not line:
@@ -231,23 +233,24 @@ def process_input_file(input_file: str, tokenizer: FastaTokenizer,
       
       tokens = tokenizer.tokenize(line)
 
+      max_seq_length = max_seq_length
       # -2 for [CLS] and [END] tokens
-      max_seq_length = FLAGS.max_seq_length -2
-      if len(tokens) > max_seq_length:
+      max_tokens_length = max_seq_length -2
+      if len(tokens) > max_tokens_length:
         # 50% probability of starting from the left or right
         # This is to reduce bias from training data
         if rng.random() < 0.5:
-          tokens = tokens[:max_seq_length]
+          tokens = tokens[:max_tokens_length]
         else:
-          tokens = tokens[-max_seq_length:]
+          tokens = tokens[-max_tokens_length:]
 
       tokens = ['[CLS]'] + tokens + ['[END]']
 
       vocab_words = tokenizer.vocab_words()
 
       masked_tokens, mask_indexes, masked_labels = create_masked_lm_predictions(
-                                                tokens, FLAGS.masked_lm_prob, 
-                                                FLAGS.max_predictions_per_seq, vocab_words, rng)
+                                                tokens, masked_lm_prob, 
+                                                max_predictions_per_seq, vocab_words, rng)
 
       masked_token_ids = tokenizer.tokens_to_ids(masked_tokens)
       masked_label_ids = tokenizer.tokens_to_ids(masked_labels)
@@ -255,19 +258,24 @@ def process_input_file(input_file: str, tokenizer: FastaTokenizer,
       input_mask = [1] * len(masked_token_ids)
 
       #pad 0's until length is equal to max_seq_length
-      while len(masked_token_ids) < max_seq_length: 
-        masked_token_ids.append(0)
-        input_mask.append(0)
+      diff = max_seq_length - len(masked_token_ids)
+      if diff > 0:
+        padding = [0] * diff
+        masked_token_ids += padding
+        input_mask += padding
 
       
       segment_ids = [0] * len(masked_token_ids)
 
       mask_lm_weights = [1.0] * len(masked_label_ids)
 
-      while len(masked_label_ids) < FLAGS.max_predictions_per_seq:
-        mask_lm_weights.append(0)
-        masked_label_ids.append(0)
-        mask_indexes.append(0)
+      pred_diff = max_predictions_per_seq - len(masked_label_ids)
+      if pred_diff > 0:
+        padding = [0] * pred_diff
+        mask_lm_weights += padding
+        masked_label_ids += padding
+        mask_indexes += padding
+
 
 
       assert len(masked_token_ids) == max_seq_length
@@ -306,7 +314,9 @@ def main(_):
   
   writer = TrainingExmpleWriter(FLAGS.output_file)
 
-  process_input_files(input_files, tokenizer, writer, rng)
+  process_input_files(input_files, tokenizer, writer, rng,
+                      FLAGS.max_seq_length, FLAGS.masked_lm_prob, 
+                      FLAGS.max_predictions_per_seq)
 
   writer.flush_and_close()
 
@@ -318,4 +328,5 @@ if __name__ == "__main__":
   flags.mark_flag_as_required("input_file")
   flags.mark_flag_as_required("output_file")
   flags.mark_flag_as_required("vocab_file")
-  tf.app.run()
+  
+  cProfile.run('tf.app.run()')
