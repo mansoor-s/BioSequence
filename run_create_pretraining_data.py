@@ -10,8 +10,8 @@ def launch_data_prep_process(input_file, output_file, masked_lm_prob,
 						"--input_file={}".format(input_file),
 						"--output_file={}".format(output_file),
 						"--vocab_file={}".format(vocab_file),
-						"--masked_lm_prob={}".format(),
-						"--max_predictions_per_seq={}".format()])
+						"--masked_lm_prob={}".format(masked_lm_prob),
+						"--max_predictions_per_seq={}".format(max_predictions_per_seq)])
 
 
 #list of strings indicating only the file name
