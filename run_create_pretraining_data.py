@@ -65,11 +65,11 @@ if __name__ == "__main__":
 	max_predictions_per_seq = sys.argv[4]
 
 	for f in input_files:
-		input_path = os.path.join(input_path, f)
-		output_path = os.path.join(output_path, f)
+		file_input_path = os.path.join(input_path, f)
+		file_output_path = os.path.join(output_path, f)
 
-		print(input_path)
+		print(file_input_path)
 
-		#launch_data_prep_process(input_path, output_path, masked_lm_prob, max_predictions_per_seq)
+		#launch_data_prep_process(file_input_path, file_output_path, masked_lm_prob, max_predictions_per_seq)
 
   
