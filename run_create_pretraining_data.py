@@ -3,8 +3,8 @@ import sys
 import os
 
 #each input file gets its own process 
-def launch_data_prep_process(input_file, output_file, vocab_file="vocab.txt",
-								masked_lm_prob, max_predictions_per_seq):
+def launch_data_prep_process(input_file, output_file, masked_lm_prob,
+								max_predictions_per_seq, vocab_file="vocab.txt"):
 
 	subprocess.Popen(['python', 'create_pretraining_data.py',
 						"--input_file={}".format(input_file),
