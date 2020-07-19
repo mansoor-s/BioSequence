@@ -68,6 +68,8 @@ if __name__ == "__main__":
 		input_path = os.path.join(input_path, f)
 		output_path = os.path.join(output_path, f)
 
-		launch_data_prep_process(input_path, output_path, masked_lm_prob, max_predictions_per_seq)
+		print(input_path)
+
+		#launch_data_prep_process(input_path, output_path, masked_lm_prob, max_predictions_per_seq)
 
   
